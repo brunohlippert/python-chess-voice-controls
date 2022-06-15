@@ -5,6 +5,7 @@
 # Note: The pygame tutorial by Eddie Sharick was used for the GUI engine. The GUI code was altered by Boo Sung Kim to
 # fit in with the rest of the project.
 #
+from trace import Trace
 import chess_engine
 import pygame as py
 
@@ -14,6 +15,8 @@ from enums import Player
 """Variables"""
 WIDTH = HEIGHT = 512  # width and height of the chess board
 DIMENSION = 8  # the dimensions of the chess board
+LEFT_PADDING = 1
+TOP_PADDING = 1
 SQ_SIZE = HEIGHT // DIMENSION  # the size of each of the squares in the board
 MAX_FPS = 15  # FPS for animations
 IMAGES = {}  # images for the chess pieces
@@ -35,7 +38,10 @@ def draw_game_state(screen, game_state, valid_moves, square_selected):
         :param screen       -- the pygame screen
         :param game_state   -- the state of the current chess game
     '''
+    screen.fill(py.Color("black"))
     draw_squares(screen)
+    draw_columns_rows_number(screen)
+    draw_turn(screen, game_state.whose_turn())
     highlight_square(screen, game_state, valid_moves, square_selected)
     draw_pieces(screen, game_state)
 
@@ -48,8 +54,35 @@ def draw_squares(screen):
     for r in range(DIMENSION):
         for c in range(DIMENSION):
             color = colors[(r + c) % 2]
-            py.draw.rect(screen, color, py.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+            py.draw.rect(screen, color, py.Rect((c + LEFT_PADDING) * SQ_SIZE, (r + TOP_PADDING) * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
+def draw_columns_rows_number(screen):
+    ''' Draw the chess board aux rows and columns numbers
+
+    :param screen:          -- the pygame screen
+    '''
+
+    for r in range(DIMENSION):
+        text = str(r + 1)
+        font = py.font.SysFont(py.font.get_default_font(), 50)
+        text = font.render(text, True, (255,255,255))
+        screen.blit(text, (SQ_SIZE/3, ((r + TOP_PADDING) * SQ_SIZE) + SQ_SIZE / 3))
+
+    for c in range(DIMENSION):
+        text = str(c + 1)
+        font = py.font.SysFont(py.font.get_default_font(), 50)
+        text = font.render(text, True, (255,255,255))
+        screen.blit(text, (((c + LEFT_PADDING) * SQ_SIZE) + SQ_SIZE/3, SQ_SIZE/4))
+
+def draw_turn(screen, isWhiteTurn):
+    ''' Draw the chess board aux turn text
+
+    :param screen:          -- the pygame screen
+    '''
+    text = "Turn: "+ ("White" if isWhiteTurn else "Black")
+    font = py.font.SysFont(py.font.get_default_font(), 50)
+    text = font.render(text, True, (255,255,255))
+    screen.blit(text, ((DIMENSION) * SQ_SIZE / 3, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 3))
 
 def draw_pieces(screen, game_state):
     ''' Draw the chess pieces onto the board
@@ -62,7 +95,7 @@ def draw_pieces(screen, game_state):
             piece = game_state.get_piece(r, c)
             if piece is not None and piece != Player.EMPTY:
                 screen.blit(IMAGES[piece.get_player() + "_" + piece.get_name()],
-                            py.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+                            py.Rect((c + LEFT_PADDING) * SQ_SIZE, (r + TOP_PADDING) * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
 def highlight_square(screen, game_state, valid_moves, square_selected):
@@ -76,18 +109,18 @@ def highlight_square(screen, game_state, valid_moves, square_selected):
             s = py.Surface((SQ_SIZE, SQ_SIZE))
             s.set_alpha(100)
             s.fill(py.Color("blue"))
-            screen.blit(s, (col * SQ_SIZE, row * SQ_SIZE))
+            screen.blit(s, ((col+LEFT_PADDING) * SQ_SIZE, (row + TOP_PADDING) * SQ_SIZE))
 
             # highlight move squares
             s.fill(py.Color("green"))
 
             for move in valid_moves:
-                screen.blit(s, (move[1] * SQ_SIZE, move[0] * SQ_SIZE))
+                screen.blit(s, ((move[1] + LEFT_PADDING) * SQ_SIZE, (move[0] + TOP_PADDING) * SQ_SIZE))
 
 
 def main():
     py.init()
-    screen = py.display.set_mode((WIDTH, HEIGHT))
+    screen = py.display.set_mode((WIDTH + (SQ_SIZE * LEFT_PADDING)+ SQ_SIZE, HEIGHT + (SQ_SIZE * TOP_PADDING) + SQ_SIZE))
     clock = py.time.Clock()
     game_state = chess_engine.game_state()
     load_images()
@@ -106,8 +139,8 @@ def main():
             elif e.type == py.MOUSEBUTTONDOWN: #Mouse events
                 if not game_over:
                     location = py.mouse.get_pos()
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
+                    col = (location[0] // SQ_SIZE) - LEFT_PADDING
+                    row = (location[1] // SQ_SIZE) - TOP_PADDING
 
                     # If clicked on the same square, deselect it
                     if square_selected == (row, col):
