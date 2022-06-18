@@ -35,10 +35,13 @@ To install this project, make sure you have the correct version of Python and Py
 (Currently tested on Python 3.7.9 with Pygame 2.0.0dev8 and Python 3.8.2 with Pygame 2.0.0 on macOS Catalina)
 ```
 git clone https://github.com/boosungkim/python-chess.git
+sudo apt install jackd2
+sudo apt install python3-pyaudio
 cd python-chess
 python3 -m venv venv
 source venv/bin/activate
 pip install pygame
+pip install SpeechRecognition
 ```
 
 <a name="commands"></a>

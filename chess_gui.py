@@ -5,6 +5,8 @@
 # Note: The pygame tutorial by Eddie Sharick was used for the GUI engine. The GUI code was altered by Boo Sung Kim to
 # fit in with the rest of the project.
 #
+import speech_recognition as sr
+from cgitb import text
 from trace import Trace
 import chess_engine
 import pygame as py
@@ -118,6 +120,61 @@ def highlight_square(screen, game_state, valid_moves, square_selected):
                 screen.blit(s, ((move[1] + LEFT_PADDING) * SQ_SIZE, (move[0] + TOP_PADDING) * SQ_SIZE))
 
 
+def handlePlayerInput(row, col, square_selected, player_clicks, valid_moves, game_state):
+     # If clicked on the same square, deselect it
+    if square_selected == (row, col):
+        square_selected = ()
+        player_clicks = []
+    else:
+        square_selected = (row, col)
+        player_clicks.append(square_selected)
+    if len(player_clicks) == 2:
+        # If second click not a valid move
+        if (player_clicks[1][0], player_clicks[1][1]) not in valid_moves:
+            square_selected = (row, col)
+            player_clicks = []
+            player_clicks.append(square_selected)
+
+            valid_moves = game_state.get_valid_moves((row, col))
+            if valid_moves is None:
+                valid_moves = []
+        else: # Moves the piece
+            game_state.move_piece((player_clicks[0][0], player_clicks[0][1]),
+                                    (player_clicks[1][0], player_clicks[1][1]), False)
+            square_selected = ()
+            player_clicks = []
+            valid_moves = []
+    else:
+        valid_moves = game_state.get_valid_moves((row, col))
+        if valid_moves is None:
+            valid_moves = []
+
+    return (square_selected, player_clicks, valid_moves)
+
+def getRowColumnFromSpeak(speakText: str):
+    try:
+        if not(" " in speakText) or not("linha" in speakText) or not("coluna" in speakText):
+            return (-1, -1)
+        
+        speakText = speakText.replace("colunas", "coluna").replace("linhas", "linha").replace("oi", "8")
+        textParts = speakText.split(" ")
+        if len(textParts) != 4:
+            return (-1, -1)
+
+        row = 0
+        col = 0
+
+        for i in range(len(textParts)):
+            if textParts[i] == "linha":
+                row = int(textParts[i + 1])
+            if textParts[i] == "coluna":
+                col = int(textParts[i + 1])
+
+        return (row, col)
+    except:
+        return (-1, -1)
+    
+
 def main():
     py.init()
     screen = py.display.set_mode((WIDTH + (SQ_SIZE * LEFT_PADDING)+ SQ_SIZE, HEIGHT + (SQ_SIZE * TOP_PADDING) + SQ_SIZE))
@@ -132,50 +189,53 @@ def main():
 
     game_state = chess_engine.game_state()
 
-    while running:
-        for e in py.event.get():
-            if e.type == py.QUIT:
-                running = False
-            elif e.type == py.MOUSEBUTTONDOWN: #Mouse events
-                if not game_over:
-                    location = py.mouse.get_pos()
-                    col = (location[0] // SQ_SIZE) - LEFT_PADDING
-                    row = (location[1] // SQ_SIZE) - TOP_PADDING
+    usingSpeak = True
 
-                    # If clicked on the same square, deselect it
-                    if square_selected == (row, col):
+    draw_game_state(screen, game_state, valid_moves, square_selected)
+    clock.tick(MAX_FPS)
+    py.display.flip()
+
+    while running:
+        if usingSpeak:
+            r = sr.Recognizer()
+
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source)
+                print("Ouvindo...")
+                audio = r.listen(source)
+
+            res = r.recognize_google(audio, language="pt-BR")
+            print("Ouvi: ", res)
+
+            row, col = getRowColumnFromSpeak(res.lower())
+
+            print("row", row, "col", col)
+
+            if row != -1 and col != -1:
+                square_selected, player_clicks, valid_moves = handlePlayerInput(row - 1, col - 1, square_selected, player_clicks, valid_moves, game_state)
+        else:
+            for e in py.event.get():
+                if e.type == py.QUIT:
+                    running = False
+                elif e.type == py.MOUSEBUTTONDOWN: #Mouse events
+                    if not game_over:
+                        location = py.mouse.get_pos()
+                        col = (location[0] // SQ_SIZE) - LEFT_PADDING
+                        row = (location[1] // SQ_SIZE) - TOP_PADDING
+
+                        square_selected, player_clicks, valid_moves = handlePlayerInput(row, col, square_selected, player_clicks, valid_moves, game_state)
+                    
+                elif e.type == py.KEYDOWN:
+                    if e.key == py.K_r:
+                        game_over = False
+                        game_state = chess_engine.game_state()
+                        valid_moves = []
                         square_selected = ()
                         player_clicks = []
-                    else:
-                        square_selected = (row, col)
-                        player_clicks.append(square_selected)
-                    if len(player_clicks) == 2:
-                        # If second click not a valiod move
-                        if (player_clicks[1][0], player_clicks[1][1]) not in valid_moves:
-                            square_selected = ()
-                            player_clicks = []
-                            valid_moves = []
-                        else: # Moves the piece
-                            game_state.move_piece((player_clicks[0][0], player_clicks[0][1]),
-                                                  (player_clicks[1][0], player_clicks[1][1]), False)
-                            square_selected = ()
-                            player_clicks = []
-                            valid_moves = []
-                    else:
-                        valid_moves = game_state.get_valid_moves((row, col))
-                        if valid_moves is None:
-                            valid_moves = []
-            elif e.type == py.KEYDOWN:
-                if e.key == py.K_r:
-                    game_over = False
-                    game_state = chess_engine.game_state()
-                    valid_moves = []
-                    square_selected = ()
-                    player_clicks = []
-                    valid_moves = []
-                elif e.key == py.K_u:
-                    game_state.undo_move()
-                    print(len(game_state.move_log))
+                        valid_moves = []
+                    elif e.key == py.K_u:
+                        game_state.undo_move()
+                        print(len(game_state.move_log))
 
         draw_game_state(screen, game_state, valid_moves, square_selected)
 
