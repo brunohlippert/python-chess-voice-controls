@@ -81,7 +81,7 @@ def draw_turn(screen, isWhiteTurn):
 
     :param screen:          -- the pygame screen
     '''
-    text = "Turn: "+ ("White" if isWhiteTurn else "Black")
+    text = "Vez: "+ ("Branco" if isWhiteTurn else "Preto")
     font = py.font.SysFont(py.font.get_default_font(), 50)
     text = font.render(text, True, (255,255,255))
     screen.blit(text, ((DIMENSION) * SQ_SIZE / 3, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 3))
@@ -189,7 +189,13 @@ def main():
 
     game_state = chess_engine.game_state()
 
-    usingSpeak = True
+    print("Selecione o tipo de entrada (apenas numero):")
+    print("1 - Mouse")
+    print("2 - Comandos de voz")
+
+    x = int(input())
+
+    usingSpeak = x == 2
 
     draw_game_state(screen, game_state, valid_moves, square_selected)
     clock.tick(MAX_FPS)
