@@ -84,7 +84,7 @@ def draw_turn(screen, isWhiteTurn):
     text = "Vez: "+ ("Branco" if isWhiteTurn else "Preto")
     font = py.font.SysFont(py.font.get_default_font(), 50)
     text = font.render(text, True, (255,255,255))
-    screen.blit(text, ((DIMENSION) * SQ_SIZE / 3, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 3))
+    screen.blit(text, (SQ_SIZE, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 3))
 
 def draw_pieces(screen, game_state):
     ''' Draw the chess pieces onto the board
