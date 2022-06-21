@@ -33,7 +33,7 @@ def load_images():
         IMAGES[p] = py.transform.scale(py.image.load("images/" + p + ".png"), (SQ_SIZE, SQ_SIZE))
 
 
-def draw_game_state(screen, game_state, valid_moves, square_selected):
+def draw_game_state(screen, game_state, valid_moves, square_selected, isVoice):
     ''' Draw the complete chess board with pieces
 
     Keyword arguments:
@@ -46,6 +46,7 @@ def draw_game_state(screen, game_state, valid_moves, square_selected):
     draw_turn(screen, game_state.whose_turn())
     highlight_square(screen, game_state, valid_moves, square_selected)
     draw_pieces(screen, game_state)
+    draw_voice(screen, isVoice)
 
 
 def draw_squares(screen):
@@ -85,6 +86,16 @@ def draw_turn(screen, isWhiteTurn):
     font = py.font.SysFont(py.font.get_default_font(), 50)
     text = font.render(text, True, (255,255,255))
     screen.blit(text, (SQ_SIZE, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 3))
+
+def draw_voice(screen, isVoice):
+    if isVoice:
+        text = "Experimente falar a linha e coluna"
+        text2 = "da sua peça, por exemplo: linha 1 coluna 1"
+        font = py.font.SysFont(py.font.get_default_font(), 16)
+        text = font.render(text, True, (255,255,255))
+        text2 = font.render(text2, True, (255,255,255))
+        screen.blit(text, (SQ_SIZE * 5, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 4))
+        screen.blit(text2, (SQ_SIZE * 5, ((DIMENSION + 1) * SQ_SIZE) + SQ_SIZE / 2))
 
 def draw_pieces(screen, game_state):
     ''' Draw the chess pieces onto the board
@@ -197,7 +208,7 @@ def main():
 
     usingSpeak = x == 2
 
-    draw_game_state(screen, game_state, valid_moves, square_selected)
+    draw_game_state(screen, game_state, valid_moves, square_selected, usingSpeak)
     clock.tick(MAX_FPS)
     py.display.flip()
 
@@ -208,6 +219,7 @@ def main():
             with sr.Microphone() as source:
                 r.adjust_for_ambient_noise(source)
                 print("Ouvindo...")
+                py.event.get()
                 audio = r.listen(source)
 
             res = r.recognize_google(audio, language="pt-BR")
@@ -243,7 +255,7 @@ def main():
                         game_state.undo_move()
                         print(len(game_state.move_log))
 
-        draw_game_state(screen, game_state, valid_moves, square_selected)
+        draw_game_state(screen, game_state, valid_moves, square_selected, usingSpeak)
 
         endgame = game_state.checkmate_stalemate_checker()
         if endgame == 0:
